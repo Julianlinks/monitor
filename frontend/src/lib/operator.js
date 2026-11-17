@@ -3,9 +3,9 @@ const KEY = 'pd.operator'
 
 export function getOperator() {
   try {
-    return localStorage.getItem(KEY) || 'demo visitor'
+    return localStorage.getItem(KEY) || '演示用户'
   } catch {
-    return 'demo visitor'
+    return '演示用户'
   }
 }
 

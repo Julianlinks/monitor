@@ -1,3 +1,4 @@
+import { displayText } from '../lib/displayText'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronRight, Download, ExternalLink, GraduationCap, ListOrdered, Play, RefreshCw, ShieldCheck } from 'lucide-react'
@@ -5,7 +6,7 @@ import { api, exportJournalUrl } from '../services/api'
 import { PriorityBadge } from '../components/Badges'
 import { clockIn, dateTimeIn, viewerZone, zoneLabel } from '../lib/zone'
 import {
-  capitalize, chartGeometry, episodeKey, evidenceText, floodParts, graderTitle, itemWriter, passRate, reduction,
+  localizedReason, localizedStep, localizedFinding, chartGeometry, episodeKey, evidenceText, floodParts, graderTitle, itemWriter, passRate, reduction,
   ruleLabel, writerLabel,
 } from '../lib/triage'
 
@@ -14,10 +15,10 @@ const CHART_H = 72
 
 export function EvidenceChart({ evidence }) {
   const g = chartGeometry(evidence, CHART_W, CHART_H)
-  if (!g) return <div className="tri-chart tri-chart-empty">No trend samples</div>
+  if (!g) return <div className="tri-chart tri-chart-empty">暂无趋势样本</div>
   return (
     <svg className="tri-chart" viewBox={`0 0 ${CHART_W} ${CHART_H}`} preserveAspectRatio="none"
-      role="img" aria-label="Trend evidence with the alarm limit">
+      role="img" aria-label="趋势数据及告警阈值">
       {g.shade && <rect className="tri-past" x={g.shade.x} y="0" width={g.shade.width} height={CHART_H} />}
       <line className="tri-limit" x1="0" x2={CHART_W} y1={g.limitY} y2={g.limitY} vectorEffect="non-scaling-stroke" />
       <path className="tri-line" d={g.path} vectorEffect="non-scaling-stroke" />
@@ -28,13 +29,13 @@ export function EvidenceChart({ evidence }) {
 function Consequences({ items, zone }) {
   const [open, setOpen] = useState(false)
   if (!items.length) {
-    return <p className="muted small tri-alone">Nothing else in this window depends on it.</p>
+    return <p className="muted small tri-alone">此时段内未发现相关的后续告警。</p>
   }
   return (
     <div className="tri-cq">
       <button className="tri-cq-toggle" onClick={() => setOpen(o => !o)} aria-expanded={open}>
         {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-        Explains {items.length} more alarm{items.length === 1 ? '' : 's'}, collapsed under this cause
+        展开关联的 {items.length} 条后续告警（已按原因归组）
       </button>
       {open && (
         <ul className="tri-cq-list">
@@ -42,7 +43,7 @@ function Consequences({ items, zone }) {
             <li key={episodeKey(c, i)}>
               <div className="tri-cq-head">
                 <PriorityBadge priority={c.priority} compact />
-                <span className="tri-cq-label">{capitalize(c.label)}</span>
+                <span className="tri-cq-label">{displayText(c.label)}</span>
                 <span className="muted small mono">{clockIn(c.start, zone.name, zone.labels)}</span>
               </div>
               <div className="muted small mono tri-point">{c.point}</div>
@@ -59,29 +60,29 @@ export function TriageItem({ item, zone }) {
   return (
     <article className={`tri-item p${item.priority}`}>
       <header className="tri-item-head">
-        <div className="tri-rank" aria-label={`Rank ${item.rank}`}>{item.rank}</div>
+        <div className="tri-rank" aria-label={`排名 ${item.rank}`}>{item.rank}</div>
         <div className="tri-title">
-          <div className="tri-label">{capitalize(item.label)}</div>
+          <div className="tri-label">{displayText(item.label)}</div>
           <div className="muted small mono tri-point">{item.point}</div>
           <div className="tri-chips">
             <PriorityBadge priority={item.priority} />
             <span className="tri-chip"><b>{item.rule}</b> {ruleLabel(item.rule)}</span>
-            {item.consequences.length > 0 && <span className="tri-chip tri-chip-cause">Root cause</span>}
+            {item.consequences.length > 0 && <span className="tri-chip tri-chip-cause">主要原因</span>}
           </div>
         </div>
       </header>
 
       <div className="tri-say">
-        <p className="tri-say-label">Why it matters</p>
-        <p>{item.reason}</p>
+        <p className="tri-say-label">判断依据与影响</p>
+        <p>{localizedReason(item, zone)}</p>
       </div>
       <div className="tri-say tri-say-step">
-        <p className="tri-say-label">Next step</p>
-        <p>{item.next_step}</p>
+        <p className="tri-say-label">建议核对事项</p>
+        <p>{localizedStep(item)}</p>
       </div>
 
       <figure className="tri-evidence">
-        <figcaption className="tri-say-label">Trend evidence</figcaption>
+        <figcaption className="tri-say-label">趋势依据</figcaption>
         <EvidenceChart evidence={item.evidence} />
         <p className="small muted">{evidenceText(item.evidence, zone)}</p>
       </figure>
@@ -107,26 +108,25 @@ export function GradingPanel({ grading, initiallyOpen = false }) {
     <div className="card tri-grading">
       <button className="tri-cq-toggle" onClick={() => setOpen(o => !o)} aria-expanded={open}>
         {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-        <GraduationCap size={15} /> How this agent is graded
+        <GraduationCap size={15} /> 研判效果评估
       </button>
       {open && (
         <div className="tri-grading-body">
           <p className="muted small">
-            The agent's eval suite grades what its {grading.writer} writer puts on each card against a known right
-            answer: {grading.cases_passed} of {grading.cases_run} cases passed every grader in the run of{' '}
-            {grading.date}, agent {grading.agent_version}. The cases are synthetic.
+            使用已知答案的合成案例评估 {displayText(grading.writer)} 生成的结果。通过全部检查的案例数为 {grading.cases_passed} ／ {grading.cases_run} ，评估日期{' '}
+            {grading.date}，研判程序版本 {grading.agent_version}。样本均为模拟数据。
           </p>
           <ul className="tri-grades">
             {grading.graders.map(g => (
-              <li key={g.name} title={g.what}>
+              <li key={g.name} title={displayText(g.what)}>
                 <span className="tri-grade-name">{graderTitle(g.name)}</span>
                 <span className="tri-grade-rate mono">{passRate(g.rate)}</span>
-                <span className="muted small">{g.passed} of {g.applicable}</span>
+                <span className="muted small">{g.passed} ／ {g.applicable}</span>
               </li>
             ))}
           </ul>
           <a className="tri-grading-link small" href={grading.showcase} target="_blank" rel="noreferrer">
-            What each grader checks, and the failures it found <ExternalLink size={12} />
+            查看各项检查及失败案例 <ExternalLink size={12} />
           </a>
         </div>
       )}
@@ -144,9 +144,19 @@ export function ZoneNote({ zone, at }) {
   const label = at ? zoneLabel(at, zone.name, zone.labels) : 'UTC'
   return (
     <span className="muted small tri-zone">
-      Times in {zone.name}{label === zone.name ? '' : ` (${label})`}
+      显示时区 {zone.name}{label === zone.name ? '' : ` (${label})`}
     </span>
   )
+}
+
+function downloadResult(result) {
+  const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = '研判原始结果.json'
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 export function TriageResult({ data }) {
@@ -158,31 +168,31 @@ export function TriageResult({ data }) {
     <>
       <div className="kpi-grid">
         <div className="stat-card tone-p2">
-          <div className="stat-card-label">Alarm flood</div>
+          <div className="stat-card-label">原始告警记录</div>
           <div className="stat-card-value">{r.flood}</div>
-          <div className="stat-card-sub">journal entries: {floodParts(counts)}</div>
+          <div className="stat-card-sub">日志构成 {floodParts(counts)}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Ranked items</div>
+          <div className="stat-card-label">研判条目</div>
           <div className="stat-card-value">{r.items}</div>
           <div className="stat-card-sub">
-            {counts.consequences_collapsed} collapsed under their cause{counts.nuisance ? `, ${counts.nuisance} nuisance` : ''}{counts.unresolved ? `, ${counts.unresolved} unresolved` : ''}
+            {counts.consequences_collapsed} 条已归到对应原因下{counts.nuisance ? `, ${counts.nuisance} 条疑似干扰` : ''}{counts.unresolved ? `, ${counts.unresolved} 条待核实` : ''}
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Reduction</div>
-          <div className="stat-card-value">{r.ratio ? `${r.ratio.toFixed(0)}x` : '--'}</div>
-          <div className="stat-card-sub">{r.flood} to read down to {r.items}</div>
+          <div className="stat-card-label">归并比例</div>
+          <div className="stat-card-value">{r.ratio ? `${r.ratio.toFixed(0)} 倍` : '--'}</div>
+          <div className="stat-card-sub">{r.flood} 条记录归并为 {r.items}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Writer</div>
-          <div className="stat-card-value small-value">{result.writer.kind === 'haiku' ? 'Claude Haiku' : 'Template'}</div>
-          <div className="stat-card-sub">{writerLabel(result.writer)}. Same guardrails either way.</div>
+          <div className="stat-card-label">说明生成方式</div>
+          <div className="stat-card-value small-value">{result.writer.kind === 'haiku' ? 'Claude Haiku' : '模板'}</div>
+          <div className="stat-card-sub">{writerLabel(result.writer)}。输出均经相同规则检查。</div>
         </div>
       </div>
 
       {result.items.length === 0 && (
-        <div className="card empty-state"><p>No item in this window needed escalating.</p></div>
+        <div className="card empty-state"><p>此时段内没有需要进一步处理的条目。</p></div>
       )}
       <div className="tri-list">
         {result.items.map((item, i) => <TriageItem key={episodeKey(item, i)} item={item} zone={zone} />)}
@@ -190,22 +200,22 @@ export function TriageResult({ data }) {
 
       {(result.nuisance.length > 0 || result.unresolved.length > 0) && (
         <div className="card">
-          <div className="card-head"><h3>Set aside</h3></div>
+          <div className="card-head"><h3>其他待核查记录</h3></div>
           <ul className="tri-aside">
             {result.nuisance.map((n, i) => (
-              <li key={episodeKey(n, i)}><span className="mono small">{n.point}</span> <span className="muted small">{n.finding}</span></li>
+              <li key={episodeKey(n, i)}><span className="mono small">{n.point}</span> <span className="muted small">{localizedFinding(n.finding)}</span></li>
             ))}
             {result.unresolved.map((u, i) => (
-              <li key={episodeKey(u, i)}><span className="mono small">{u.point}</span> <span className="muted small">{u.reason}</span></li>
+              <li key={episodeKey(u, i)}><span className="mono small">{u.point}</span> <span className="muted small">{localizedFinding(u.reason)}</span></li>
             ))}
           </ul>
         </div>
       )}
 
+      <button className="btn btn-ghost btn-sm" onClick={() => downloadResult(result)}>下载研判原始结果</button>
       <p className="muted small tri-note">
-        <ShieldCheck size={13} /> Read only. The agent gets a copy of the alarm journal and trend history for this
-        window and has no path back to the alarm manager or any meter. Agent {result.agent_version}, run in{' '}
-        {data.elapsed_ms} ms{data.cached ? ' (unchanged window, stored result)' : ''}.
+        <ShieldCheck size={13} /> 研判仅分析此时段内的日志和趋势副本。中文摘要根据规则和原始证据展示。程序版本 {result.agent_version}，耗时{' '}
+        {data.elapsed_ms} ms{data.cached ? '（时段未变，使用已保存结果）' : ''}.
       </p>
     </>
   )
@@ -260,20 +270,20 @@ export default function Triage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h2>Triage</h2>
-          <p>The BMS Alarm Triage Agent cuts the alarm flood from the latest event to a short ranked list</p>
+          <h2>告警研判</h2>
+          <p>分析最近一次事件的告警和趋势，将相关告警归组并按优先级排列。</p>
         </div>
       </div>
 
       <div className="card tri-controls">
         <div className="tri-event">
           <ListOrdered size={18} className="brand-icon" />
-          {event === undefined && <span className="muted">Looking for the latest event...</span>}
-          {event === null && <span className="muted">No alarm event yet. Trigger one from About this demo.</span>}
+          {event === undefined && <span className="muted">正在查找最近事件…</span>}
+          {event === null && <span className="muted">暂无告警事件，可在“演示说明”中触发。</span>}
           {event && (
             <span>
-              Latest event: first alarm <span className="mono">{dateTimeIn(event.first_alarm, zone.name, zone.labels)}</span>
-              {event.alarms ? <span className="muted">, {event.alarms} alarm{event.alarms === 1 ? '' : 's'}</span> : null}
+              最近事件的首条告警 <span className="mono">{dateTimeIn(event.first_alarm, zone.name, zone.labels)}</span>
+              {event.alarms ? <span className="muted">, {event.alarms} 条告警</span> : null}
               <br /><ZoneNote zone={zone} at={event.first_alarm} />
             </span>
           )}
@@ -281,11 +291,11 @@ export default function Triage() {
         <div className="tri-actions">
           <button className="btn btn-primary" onClick={run} disabled={busy || !event}>
             {busy ? <RefreshCw size={14} className="spin" /> : data ? <RefreshCw size={14} /> : <Play size={14} />}
-            {busy ? 'Triaging...' : data ? 'Run again' : 'Triage this event'}
+            {busy ? '正在研判…' : data ? '重新研判' : '研判此事件'}
           </button>
           {event && (
             <a className="btn btn-ghost" href={exportJournalUrl(event.start, event.end)} download>
-              <Download size={14} /> Journal export
+              <Download size={14} /> 导出事件日志
             </a>
           )}
         </div>
@@ -297,16 +307,10 @@ export default function Triage() {
       {!data && !busy && (
         <div className="card tri-intro">
           <p>
-            An outage raises a flood: the utility fails, both UPS systems go to battery, the generator starts,
-            the transfer switch moves, and the generator frequency dips when the load lands. The agent reads the
-            alarm journal and trend history for the window around the event, ranks the root cause first, and
-            folds its consequences underneath it, with the trend evidence and a next step for each item.
+            市电中断时，UPS 转为电池供电，发电机启动，转换开关切换电源。负载投入时还可能出现频率暂降。本页结合事件前后的告警和趋势，展示可能原因、关联告警及进一步核查事项。
           </p>
           <p className="muted small">
-            The text is written by a fixed template from each item's own evidence. Claude Haiku writes it only
-            when the server has an API key set, and the hosted demo has none. Every reply passes the same checks
-            either way: a diagnostic verb from a closed list, the item's own equipment as the target, and no
-            control action.
+            本机默认根据每条记录的依据生成模板说明。研判只读取数据；模型生成方式需要服务端另外配置。
           </p>
         </div>
       )}

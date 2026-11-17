@@ -1,3 +1,4 @@
+import { displayText } from '../lib/displayText'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
@@ -10,12 +11,12 @@ import { num } from '../lib/format'
 
 const PERIODS = ['1h', '24h', '7d']
 const TREND_FIELDS = {
-  power_kw: { label: 'Power', unit: 'kW' },
-  load_pct: { label: 'Load', unit: '%' },
-  voltage: { label: 'Voltage', unit: 'V' },
-  current: { label: 'Current', unit: 'A' },
-  power_factor: { label: 'Power factor', unit: '' },
-  frequency: { label: 'Frequency', unit: 'Hz' },
+  power_kw: { label: '有功功率', unit: 'kW' },
+  load_pct: { label: '负载率', unit: '%' },
+  voltage: { label: '电压', unit: 'V' },
+  current: { label: '电流', unit: 'A' },
+  power_factor: { label: '功率因数', unit: '' },
+  frequency: { label: '频率', unit: 'Hz' },
 }
 
 function Gauge({ value, min, max, warn, crit, low = false, label, unit, digits = 1 }) {
@@ -73,15 +74,15 @@ export default function Meters() {
   if (!meter) return null
   const nomV = meter.nominal_voltage
   const tf = TREND_FIELDS[field]
-  const tickFmt = t => new Date(t * 1000).toLocaleTimeString([], period === '7d'
+  const tickFmt = t => new Date(t * 1000).toLocaleTimeString('zh-CN', period === '7d'
     ? { month: 'short', day: 'numeric' } : { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
   return (
     <div className="page meters-layout">
       <aside className="meter-list">
-        <label className="meter-select-label" htmlFor="meter-select">Meter</label>
+        <label className="meter-select-label" htmlFor="meter-select">设备</label>
         <select id="meter-select" className="meter-select" value={selectedId} onChange={e => setParams({ id: e.target.value })}>
-          {meters.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+          {meters.map(m => <option key={m.id} value={m.id}>{displayText(m.name)}</option>)}
         </select>
         <div className="meter-buttons">
           {meters.map(m => {
@@ -89,7 +90,7 @@ export default function Meters() {
             return (
               <button key={m.id} className={`meter-btn${m.id === selectedId ? ' active' : ''}`} onClick={() => setParams({ id: m.id })}>
                 <span className={`status-dot ${a ? `p${a.priority}` : (readings[m.id]?.voltage ?? 0) < 1 ? 'off' : 'ok'}`} />
-                <span className="meter-btn-name">{m.name}</span>
+                <span className="meter-btn-name">{displayText(m.name)}</span>
                 <span className="mono muted small">{m.id}</span>
               </button>
             )
@@ -100,31 +101,31 @@ export default function Meters() {
       <div className="meter-detail">
         <div className="page-header">
           <div>
-            <h2>{meter.name} <span className="mono muted">{meter.id}</span></h2>
-            <p>{meter.description}</p>
+            <h2>{displayText(meter.name)} <span className="mono muted">{meter.id}</span></h2>
+            <p>{displayText(meter.description)}</p>
           </div>
-          <span className="status-chip">{r.status || '--'}</span>
+          <span className="status-chip">{displayText(r.status) || '--'}</span>
         </div>
 
         <div className="card gauges">
-          <Gauge label="Voltage" unit="V" value={r.voltage} min={nomV * 0.8} max={nomV * 1.2} warn={nomV * 1.05} crit={nomV * 1.1} digits={1} />
-          <Gauge label="Load" unit="% of rating" value={r.load_pct} min={0} max={100} warn={80} crit={90} digits={1} />
-          <Gauge label="Power factor" unit="" value={r.power_factor} min={0.6} max={1} warn={0.88} crit={0.85} low digits={3} />
-          <Gauge label="Frequency" unit="Hz" value={r.frequency} min={58} max={62} warn={60.3} crit={60.5} digits={2} />
+          <Gauge label="电压" unit="V" value={r.voltage} min={nomV * 0.8} max={nomV * 1.2} warn={nomV * 1.05} crit={nomV * 1.1} digits={1} />
+          <Gauge label="负载率" unit="% 额定值" value={r.load_pct} min={0} max={100} warn={80} crit={90} digits={1} />
+          <Gauge label="功率因数" unit="" value={r.power_factor} min={0.6} max={1} warn={0.88} crit={0.85} low digits={3} />
+          <Gauge label="频率" unit="Hz" value={r.frequency} min={58} max={62} warn={60.3} crit={60.5} digits={2} />
         </div>
 
         <div className="kpi-grid">
           {[
-            ['Power', num(r.power_kw), 'kW'],
-            ['Current', num(r.current), 'A'],
-            ['Demand (15 min)', num(r.demand_kw), 'kW'],
-            ['Energy', r.energy_kwh != null ? Math.round(r.energy_kwh).toLocaleString() : '--', 'kWh'],
+            ['有功功率', num(r.power_kw), 'kW'],
+            ['电流', num(r.current), 'A'],
+            ['需量（15 分钟）', num(r.demand_kw), 'kW'],
+            ['累计电量', r.energy_kwh != null ? Math.round(r.energy_kwh).toLocaleString('zh-CN') : '--', 'kWh'],
             ...(meter.type === 'ups' ? [
-              ['Battery', num(r.battery_soc), '%'],
-              ['Runtime', num(r.battery_runtime_min, 0), 'min'],
+              ['电池电量', num(r.battery_soc), '%'],
+              ['剩余续航', num(r.battery_runtime_min, 0), 'min'],
             ] : []),
-            ...(meter.type === 'ats' ? [['Position', r.position === 'GENERATOR' ? 'Emergency' : 'Normal', '']] : []),
-            ...(meter.type === 'generator' ? [['Engine', r.gen_state ? r.gen_state.toLowerCase() : '--', '']] : []),
+            ...(meter.type === 'ats' ? [['开关位置', r.position === 'GENERATOR' ? '应急电源' : '正常', '']] : []),
+            ...(meter.type === 'generator' ? [['发动机状态', r.gen_state ? displayText(r.gen_state[0] + r.gen_state.slice(1).toLowerCase()) : '--', '']] : []),
           ].map(([label, value, unit]) => (
             <div key={label} className="stat-card">
               <div className="stat-card-label">{label}</div>
@@ -135,12 +136,12 @@ export default function Meters() {
 
         {meterAlarms.length > 0 && (
           <div className="card">
-            <div className="card-head"><h3>Alarms on this meter</h3></div>
+            <div className="card-head"><h3>此设备的告警</h3></div>
             <ul className="mini-alarms">
               {meterAlarms.map(a => (
                 <li key={a.tag} className={`p${a.priority}`}>
                   <PriorityBadge priority={a.priority} compact />
-                  <div className="mini-alarm-text">{a.message}</div>
+                  <div className="mini-alarm-text">{displayText(a.message)}</div>
                   <StateBadge state={a.state} priority={a.priority} />
                 </li>
               ))}
@@ -150,14 +151,14 @@ export default function Meters() {
 
         <div className="card">
           <div className="card-head wrap">
-            <h3>Trend</h3>
+            <h3>历史趋势</h3>
             <div className="trend-controls">
-              <select value={field} onChange={e => setField(e.target.value)} aria-label="Trend parameter">
+              <select value={field} onChange={e => setField(e.target.value)} aria-label="趋势参数">
                 {Object.entries(TREND_FIELDS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
               <div className="seg">
                 {PERIODS.map(p => (
-                  <button key={p} className={`seg-btn${period === p ? ' active' : ''}`} onClick={() => setPeriod(p)}>{p}</button>
+                  <button key={p} className={`seg-btn${period === p ? ' active' : ''}`} onClick={() => setPeriod(p)}>{displayText(p)}</button>
                 ))}
               </div>
             </div>
@@ -169,7 +170,7 @@ export default function Meters() {
                 tick={{ fill: 'var(--text-muted)', fontSize: 11 }} tickLine={false} minTickGap={40} />
               <YAxis domain={['auto', 'auto']} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} tickLine={false} axisLine={false} width={48} />
               <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8 }}
-                labelFormatter={t => new Date(t * 1000).toLocaleString()} formatter={v => [`${v} ${tf.unit}`, tf.label]} />
+                labelFormatter={t => new Date(t * 1000).toLocaleString('zh-CN')} formatter={v => [`${v} ${tf.unit}`, tf.label]} />
               {field === 'load_pct' && <ReferenceLine y={80} stroke="var(--p3)" strokeDasharray="4 4" />}
               <Line type="monotone" dataKey={field} stroke="var(--accent)" dot={false} strokeWidth={1.6} isAnimationActive={false} />
             </LineChart>

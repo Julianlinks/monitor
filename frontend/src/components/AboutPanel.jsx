@@ -1,3 +1,4 @@
+import { displayText } from '../lib/displayText'
 import React, { useEffect, useRef, useState } from 'react'
 import { X, FlaskConical, Play, Github } from 'lucide-react'
 import { useFeed } from '../services/LiveFeed'
@@ -13,7 +14,7 @@ export function ScenarioButtons({ onDone }) {
   const running = system?.scenario
 
   if (!demo?.events_enabled) {
-    return <p className="muted">Demo events are disabled on this server.</p>
+    return <p className="muted">服务端已关闭模拟事件功能。</p>
   }
 
   const fire = async (name) => {
@@ -33,15 +34,15 @@ export function ScenarioButtons({ onDone }) {
     <div className="scenario-list">
       {running && (
         <div className="scenario-running">
-          <span className="pulse-dot" /> {running.label} in progress
+          <span className="pulse-dot" /> {displayText(running.label)} 进行中
         </div>
       )}
       {demo.scenarios.map(s => (
         <button key={s.name} className="scenario-btn" disabled={!!running || !!busy} onClick={() => fire(s.name)}>
           <Play size={14} />
           <span>
-            <strong>{s.label}</strong>
-            <small>{s.description}</small>
+            <strong>{displayText(s.label)}</strong>
+            <small>{displayText(s.description)}</small>
           </span>
         </button>
       ))}
@@ -68,65 +69,53 @@ export default function AboutPanel({ open, onClose }) {
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="about-title"
         onClick={e => e.stopPropagation()}>
         <div className="modal-head">
-          <h2 id="about-title">About this demo</h2>
-          <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
+          <h2 id="about-title">演示说明</h2>
+          <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label="关闭"><X size={18} /></button>
         </div>
 
         <div className="modal-body">
           <div className="sim-notice">
             <FlaskConical size={18} />
             <div>
-              <strong>All data on this site is simulated.</strong> No real facility, customer, or
-              equipment is connected. A Python simulator models a small data center and updates every
-              2 seconds.
+              <strong>实时演示使用模拟数据。</strong> Python 模拟器模拟小型数据中心，默认每两秒更新一次。
             </div>
           </div>
 
           <section>
-            <h3>What is modeled</h3>
+            <h3>模拟站设备</h3>
             <p>
-              A 2N data center of about 450 kW: a 480 V utility service and a 750 kW standby generator
-              feed an automatic transfer switch, then the main switchboard. Two 400 kVA UPS systems
-              (A side and B side) each feed two 150 kVA PDUs at 208 V, and the cooling plant runs from
-              its own panel. Values roll up from the IT load through transformer and UPS losses, so
-              the numbers add up the way a real site does.
+              模拟站总负荷约 450 kW，采用双路冗余供电。480 V 市电和 750 kW 备用发电机经自动转换开关接入主配电柜。A、B 两路 400 kVA UPS 各带两台 150 kVA 配电单元，输出 208 V。制冷设备由独立配电柜供电，模型计入变压器和 UPS 损耗。
             </p>
           </section>
 
           <section>
-            <h3>Try it</h3>
+            <h3>模拟事件</h3>
             <p className="muted">
-              Events also happen on their own every few minutes. The event rate is faster than a real
-              site so there is always something to look at.
+              事件会每隔几分钟自动触发，也可选择下列场景观察告警变化。
             </p>
             <ScenarioButtons onDone={onClose} />
           </section>
 
           <section>
-            <h3>ISA 18.2 alarm handling</h3>
+            <h3>ISA 18.2 告警管理</h3>
             <p>
-              Every alarm in the master alarm database is rationalized with a priority, a consequence,
-              and an operator response. Alarms follow the ISA 18.2 state model, use deadbands and
-              delays to prevent chatter, can be shelved for a limited time with a logged reason, and
-              some are suppressed by design (for example, generator alarms while the generator is off).
-              Every transition is written to the alarm journal.
+              每条告警包含优先级、影响和处置建议。阈值死区和延时可减少重复告警。操作员可填写原因后限时暂搁；满足抑制规则时系统自动抑制告警，例如发电机停机时的低频告警。每次状态变化均记入日志。
             </p>
             <StateLegend compact />
           </section>
 
           <section>
-            <h3>Real hardware</h3>
+            <h3>现场设备接入</h3>
             <p>
-              The same backend polls Modbus TCP meters when started with <code>DATA_SOURCE=modbus</code> and
-              a register map. The alarm engine, history, and this interface work the same either way.
+              读取 Modbus TCP 仪表时，需设置 <code>DATA_SOURCE=modbus</code> 并配置寄存器映射，历史数据和告警沿用相同的处理流程。
             </p>
           </section>
 
           <section>
-            <h3>Stack</h3>
-            <p>Python, FastAPI, WebSocket, SQLite, React, Vite. Hosted on Render.</p>
+            <h3>技术栈</h3>
+            <p>后端使用 Python、FastAPI 和 SQLite，前端使用 React 与 Vite，通过 WebSocket 接收实时数据。</p>
             <a className="btn btn-ghost" href={REPO_URL} target="_blank" rel="noreferrer">
-              <Github size={14} /> Source on GitHub
+              <Github size={14} /> 查看 GitHub 原项目
             </a>
           </section>
         </div>

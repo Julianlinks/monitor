@@ -16,25 +16,25 @@ describe('Triage tab', () => {
     const html = render(<TriageResult data={outage} />)
     const items = html.match(/class="tri-item /g) || []
     expect(items).toHaveLength(1)
-    expect(text(html)).toContain('Utility power failure')
-    expect(text(html)).toContain('Root cause')
-    expect(text(html)).toContain('Explains 5 more alarms, collapsed under this cause')
+    expect(text(html)).toContain('市电中断')
+    expect(text(html)).toContain('主要原因')
+    expect(text(html)).toContain('展开关联的 5 条后续告警（已按原因归组）')
     // collapsed by default: the consequence list is not rendered until opened
     expect(html).not.toContain('tri-cq-list')
   })
 
   it('shows the flood against the ranked list', () => {
     const t = text(render(<TriageResult data={outage} />))
-    expect(t).toContain('Alarm flood 24')
-    expect(t).toContain('Ranked items 1')
-    expect(t).toContain('5 collapsed under their cause')
-    expect(t).toContain('24x')
+    expect(t).toContain('原始告警记录 24')
+    expect(t).toContain('研判条目 1')
+    expect(t).toContain('5 条已归到对应原因下')
+    expect(t).toContain('24 倍')
   })
 
   it('says which writer wrote the text', () => {
     const t = text(render(<TriageResult data={outage} />))
-    expect(t).toContain('Written by the template, no model')
-    expect(t).toContain('Template, no model')
+    expect(t).toContain('根据模板生成')
+    expect(t).toContain('本地模板')
     const haiku = {
       ...outage,
       triage: {
@@ -44,32 +44,32 @@ describe('Triage tab', () => {
       },
     }
     const h = render(<TriageResult data={haiku} />)
-    expect(text(h)).toContain('Written by Claude Haiku')
+    expect(text(h)).toContain('由 Claude Haiku 生成')
     expect(h).toContain('tri-writer haiku')
   })
 
   it('shows the next step and the trend evidence', () => {
     const item = outage.triage.items[0]
     const html = render(<TriageItem item={item} zone={outage.zone} />)
-    expect(text(html)).toContain('Next step')
-    expect(text(html)).toContain(item.next_step.slice(0, 40))
+    expect(text(html)).toContain('建议核对事项')
+    expect(text(html)).toContain('UTIL-1：查看市电从中断到恢复的电压趋势')
     expect(html).toContain('class="tri-chart"')
     expect(html).toContain('class="tri-limit"')
     expect(html).toContain('class="tri-past"')
   })
 
   it('draws nothing for an empty trend', () => {
-    expect(render(<EvidenceChart evidence={{ trend: [] }} />)).toContain('No trend samples')
+    expect(render(<EvidenceChart evidence={{ trend: [] }} />)).toContain('暂无趋势样本')
   })
 
   it('says it is read only', () => {
-    expect(text(render(<TriageResult data={outage} />))).toContain('Read only.')
+    expect(text(render(<TriageResult data={outage} />))).toContain('研判仅分析此时段内的日志和趋势副本')
   })
 
   it('renders the page shell with the triage button', () => {
     const html = render(<MemoryRouter initialEntries={['/triage']}><Triage /></MemoryRouter>)
-    expect(text(html)).toContain('Triage this event')
-    expect(text(html)).toContain('cuts the alarm flood')
+    expect(text(html)).toContain('研判此事件')
+    expect(text(html)).toContain('将相关告警归组')
   })
 })
 
@@ -100,9 +100,9 @@ describe('Triage tab times', () => {
   it('names the zone it is showing', () => {
     const zone = outage.zone
     const t = text(render(<ZoneNote zone={zone} at={outage.event.first_alarm} />))
-    expect(t).toContain('Times in America/New_York (EDT)')
+    expect(t).toContain('显示时区 America/New_York (EDT)')
     const u = text(render(<ZoneNote zone={outageUtc.zone} at={outageUtc.event.first_alarm} />))
-    expect(u.trim()).toBe('Times in UTC')
+    expect(u.trim()).toBe('显示时区 UTC')
   })
 
   it('shows New York and UTC an exact conversion apart', () => {
@@ -113,10 +113,10 @@ describe('Triage tab times', () => {
   })
 })
 
-describe('How this agent is graded', () => {
+describe('研判效果评估', () => {
   it('is a link that opens a panel', () => {
     const html = render(<GradingPanel grading={grading} />)
-    expect(text(html)).toContain('How this agent is graded')
+    expect(text(html)).toContain('研判效果评估')
     expect(html).not.toContain('tri-grades')
   })
 
@@ -124,11 +124,11 @@ describe('How this agent is graded', () => {
     const t = text(render(<GradingPanel grading={grading} initiallyOpen />))
     expect(grading.graders.length).toBe(6)
     for (const g of grading.graders) {
-      expect(t).toContain(`${g.passed} of ${g.applicable}`)
+      expect(t).toContain(`${g.passed} ／ ${g.applicable}`)
     }
-    expect(t).toContain('Grounding')
-    expect(t).toContain(`agent ${grading.agent_version}`)
-    expect(t).toContain('The cases are synthetic.')
+    expect(t).toContain('证据一致性')
+    expect(t).toContain(`研判程序版本 ${grading.agent_version}`)
+    expect(t).toContain('样本均为模拟数据。')
   })
 
   it('links to the Evals section of the agent\'s showcase', () => {
@@ -182,8 +182,8 @@ describe('Two episodes on one point', () => {
   it('renders both cards', () => {
     const html = render(<TriageResult data={twoEpisodes} />)
     expect(html.match(/class="tri-item /g)).toHaveLength(2)
-    expect(text(html)).toContain('from 2026-09-21T14:18:20+00:00')
-    expect(text(html)).toContain('from 2026-09-21T14:28:20+00:00')
+    expect(text(html)).toContain(dateTimeIn('2026-09-21T14:18:20+00:00',outage.zone.name,outage.zone.labels))
+    expect(text(html)).toContain(dateTimeIn('2026-09-21T14:28:20+00:00',outage.zone.name,outage.zone.labels))
   })
 
   it('gives each card its own key, by point and episode start', () => {

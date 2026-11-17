@@ -1,3 +1,4 @@
+import { displayText } from '../lib/displayText'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
@@ -68,18 +69,18 @@ function Node({ n, id, meter, reading, alarm, selected, onSelect }) {
   const dead = (r.voltage ?? 0) < 1
   const statusCls = (r.status || '').toLowerCase().replace(/\s+/g, '-')
   let line2 = compact ? `${num(r.power_kw, 0)}kW ${num(r.load_pct, 0)}%` : `${num(r.power_kw, 0)} kW   ${num(r.load_pct, 0)}%`
-  if (meter.type === 'ups') line2 = `${num(r.power_kw, 0)} kW   batt ${num(r.battery_soc, 0)}%`
+  if (meter.type === 'ups') line2 = `${num(r.power_kw, 0)} kW　电量 ${num(r.battery_soc, 0)}%`
   if (meter.type === 'generator' && dead) line2 = '0 kW'
-  if (meter.type === 'ats') line2 = `${num(r.power_kw, 0)} kW   ${r.position === 'GENERATOR' ? 'E' : 'N'} closed`
+  if (meter.type === 'ats') line2 = `${num(r.power_kw, 0)} kW   ${r.position === 'GENERATOR' ? '应急' : '常用'}合闸`
 
   return (
     <g transform={`translate(${n.x - n.w / 2}, ${n.y})`} className={`ol-node${selected ? ' selected' : ''}${dead ? ' dead' : ''}${alarm ? ` p${alarm.priority} alarmed` : ''}`}
       onClick={() => onSelect(id)} role="button" tabIndex={0}
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onSelect(id)}
-      aria-label={`${meter.name}, ${r.status || 'no data'}`}>
+      aria-label={`${displayText(meter.name)}, ${displayText(r.status) || '暂无数据'}`}>
       <rect width={n.w} height={H} rx={8} className="ol-box" />
-      <text x={compact ? 8 : 12} y={20} className="ol-name">{meter.name}</text>
-      <text x={compact ? 8 : 12} y={37} className={`ol-status status-${statusCls}`}>{r.status || '--'}</text>
+      <text x={compact ? 8 : 12} y={20} className="ol-name">{displayText(meter.name)}</text>
+      <text x={compact ? 8 : 12} y={37} className={`ol-status status-${statusCls}`}>{displayText(r.status) || '--'}</text>
       <text x={compact ? 8 : 12} y={54} className="ol-values">{line2}</text>
       {alarm && <circle cx={n.w - 12} cy={12} r={5} className="ol-alarm-dot" />}
     </g>
@@ -110,32 +111,32 @@ export default function OneLineDiagram() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h2>One-line diagram</h2>
-          <p>Live power path from the sources to the IT load. Select any equipment for details.</p>
+          <h2>电气单线图</h2>
+          <p>查看从电源到负载的实时供电路径，选择设备可查看详情。</p>
         </div>
       </div>
 
       <div className="ol-layout">
         <div className="card ol-card">
           <div className="ol-legend">
-            <span><i className="lg lg-flow" /> Carrying load</span>
-            <span><i className="lg lg-live" /> Energized</span>
-            <span><i className="lg lg-dead" /> De-energized</span>
+            <span><i className="lg lg-flow" /> 带负荷</span>
+            <span><i className="lg lg-live" /> 带电</span>
+            <span><i className="lg lg-dead" /> 失电</span>
           </div>
           <div className="ol-scroll">
             <svg viewBox={`0 0 ${L.width} ${L.height}`} className={`ol-svg ol-${L.width < 500 ? 'narrow' : 'wide'}`}
-              role="img" aria-label="Electrical one-line diagram">
+              role="img" aria-label="电气单线图">
               {/* Sources to ATS */}
               <Wire d={`M${NODES['UTIL-1'].x},${bottom('UTIL-1')} V${srcY} H${ats.x - L.atsIn} V${ats.y}`} state={wire(live('UTIL-1'), !onGen && msbLive)} />
               <Wire d={`M${NODES['GEN-1'].x},${bottom('GEN-1')} V${srcY} H${ats.x + L.atsIn} V${ats.y}`} state={wire(live('GEN-1'), onGen && msbLive)} />
-              <text x={ats.x - L.atsIn - L.labelGap} y={srcY - 4} className="ol-wire-label">N</text>
-              <text x={ats.x + L.atsIn + L.labelGap - 8} y={srcY - 4} className="ol-wire-label">E</text>
+              <text x={ats.x - L.atsIn - L.labelGap} y={srcY - 4} className="ol-wire-label">常用</text>
+              <text x={ats.x + L.atsIn + L.labelGap - 8} y={srcY - 4} className="ol-wire-label">应急</text>
 
               {/* ATS to switchboard to bus */}
               <Wire d={`M${ats.x},${bottom('ATS-1')} V${NODES['MSB-1'].y}`} state={wire(msbLive, msbLive)} />
               <Wire d={`M${ats.x},${bottom('MSB-1')} V${busY}`} state={wire(msbLive, msbLive)} />
               <line x1={L.busX[0]} x2={L.busX[1]} y1={busY} y2={busY} className={`bus bus-${msbLive ? 'live' : 'dead'}`} />
-              <text x={L.busX[0] + 2} y={busY - 8} className="ol-wire-label">480 V MAIN BUS</text>
+              <text x={L.busX[0] + 2} y={busY - 8} className="ol-wire-label">480 V 主母线</text>
 
               {/* Bus to UPS and mechanical */}
               {['UPS-A', 'UPS-B', 'MECH-1'].map(id => (
@@ -163,24 +164,24 @@ export default function OneLineDiagram() {
         {sel && (
           <div className="card ol-detail">
             <div className="card-head">
-              <h3>{sel.name}</h3>
-              <button className="icon-btn" onClick={() => setSelected(null)} aria-label="Close"><X size={16} /></button>
+              <h3>{displayText(sel.name)}</h3>
+              <button className="icon-btn" onClick={() => setSelected(null)} aria-label="关闭"><X size={16} /></button>
             </div>
-            <p className="muted small">{sel.description}</p>
+            <p className="muted small">{displayText(sel.description)}</p>
             <dl className="kv">
               {[
-                ['Status', selReading.status],
-                ['Voltage', `${num(selReading.voltage)} V`],
-                ['Current', `${num(selReading.current)} A`],
-                ['Power', `${num(selReading.power_kw)} kW`],
-                ['Power factor', num(selReading.power_factor, 3)],
-                ['Frequency', `${num(selReading.frequency, 2)} Hz`],
-                ['Load', `${num(selReading.load_pct)} %`],
-                ['Demand (15 min)', `${num(selReading.demand_kw)} kW`],
+                ['运行状态', displayText(selReading.status)],
+                ['电压', `${num(selReading.voltage)} V`],
+                ['电流', `${num(selReading.current)} A`],
+                ['有功功率', `${num(selReading.power_kw)} kW`],
+                ['功率因数', num(selReading.power_factor, 3)],
+                ['频率', `${num(selReading.frequency, 2)} Hz`],
+                ['负载率', `${num(selReading.load_pct)} %`],
+                ['需量（15 分钟）', `${num(selReading.demand_kw)} kW`],
                 ...(sel.type === 'ups' ? [
-                  ['Battery charge', `${num(selReading.battery_soc)} %`],
-                  ['Battery runtime', `${num(selReading.battery_runtime_min, 0)} min`],
-                  ['Input power', `${num(selReading.input_kw)} kW`],
+                  ['电池电量', `${num(selReading.battery_soc)} %`],
+                  ['电池续航', `${num(selReading.battery_runtime_min, 0)} min`],
+                  ['输入功率', `${num(selReading.input_kw)} kW`],
                 ] : []),
               ].map(([k, v]) => <div key={k}><dt>{k}</dt><dd className="mono">{v}</dd></div>)}
             </dl>
@@ -189,13 +190,13 @@ export default function OneLineDiagram() {
                 {selAlarms.map(a => (
                   <li key={a.tag} className={`p${a.priority}`}>
                     <PriorityBadge priority={a.priority} compact />
-                    <div className="mini-alarm-text">{a.message}</div>
+                    <div className="mini-alarm-text">{displayText(a.message)}</div>
                     <StateBadge state={a.state} priority={a.priority} />
                   </li>
                 ))}
               </ul>
             )}
-            <Link className="btn btn-ghost btn-sm" to={`/meters?id=${sel.id}`}>Open meter detail</Link>
+            <Link className="btn btn-ghost btn-sm" to={`/meters?id=${sel.id}`}>查看设备详情</Link>
           </div>
         )}
       </div>

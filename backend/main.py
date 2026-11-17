@@ -1,17 +1,21 @@
 """FastAPI application entry point for Power Dashboard."""
 
 import json
+import sys
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import config
+from replay import router as replay_router
 import database
 import triage
 import triage_export
@@ -40,6 +44,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(replay_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
@@ -346,3 +351,10 @@ async def websocket_live(websocket: WebSocket):
         pass
     finally:
         c.unregister(websocket)
+
+
+# Serve the installed local viewer and API on the same origin.
+bundle_root = Path(sys._MEIPASS) if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent.parent
+frontend_dist = bundle_root / "frontend" / "dist"
+if (frontend_dist / "index.html").is_file():
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="dashboard")

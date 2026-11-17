@@ -10,32 +10,32 @@ const cause = outage.triage.items[0]
 
 describe('triage helpers', () => {
   it('names the rules and the writer', () => {
-    expect(ruleLabel('E-P1')).toBe('Cause confirmed by trend')
+    expect(ruleLabel('E-P1')).toBe('趋势支持该原因')
     expect(ruleLabel('R-P3')).toBe('R-P3')
-    expect(writerLabel({ kind: 'template' })).toBe('Written by the template, no model')
-    expect(writerLabel({ kind: 'haiku', name: 'Claude Haiku' })).toBe('Written by Claude Haiku')
+    expect(writerLabel({ kind: 'template' })).toBe('根据模板生成')
+    expect(writerLabel({ kind: 'haiku', name: 'Claude Haiku' })).toBe('由 Claude Haiku 生成')
     expect(itemWriter('Claude Haiku')).toBe('Claude Haiku')
-    expect(itemWriter('template, no model')).toBe('Template, no model')
+    expect(itemWriter('template, no model')).toBe('本地模板')
   })
 
   it('formats durations and values', () => {
-    expect(seconds(0.4)).toBe('one sample')
-    expect(seconds(108)).toBe('108 s')
-    expect(seconds(600)).toBe('10 min')
-    expect(valueText({ kind: 'discrete', limit: 0.5 }, 1)).toBe('Alarm')
+    expect(seconds(0.4)).toBe('单个采样点')
+    expect(seconds(108)).toBe('108 秒')
+    expect(seconds(600)).toBe('10 分钟')
+    expect(valueText({ kind: 'discrete', limit: 0.5 }, 1)).toBe('告警')
     expect(valueText({ kind: 'low', units: 'Hz' }, 58.8)).toBe('58.80 Hz')
   })
 
   it('states the trend evidence in one line', () => {
-    expect(evidenceText(cause.evidence)).toMatch(/^In the alarm state in \d+ of \d+ samples for /)
-    expect(evidenceText({ samples_past_limit: 0 })).toMatch(/never shows/)
+    expect(evidenceText(cause.evidence)).toMatch(/^\d+ 个样本中有 \d+ 个处于告警状态，持续 /)
+    expect(evidenceText({ samples_past_limit: 0 })).toMatch(/未见越限/)
     const sag = { kind: 'low', direction: 'LOW', limit: 432, units: 'V', samples: 12, samples_past_limit: 3,
       seconds_past_limit: 6, worst_value: 410.3 }
-    expect(evidenceText(sag)).toBe('Past its limit < 432.0 V in 3 of 12 samples for 6 s, worst 410.3 V.')
+    expect(evidenceText(sag)).toBe('12 个样本中有 3 个越限（阈值 < 432.0 V），持续 6 秒，极值 410.3 V。')
   })
 
   it('breaks the flood into its parts', () => {
-    expect(floodParts(outage.triage.counts)).toBe('6 alarms, 6 returns, 12 acknowledgements and suppressions')
+    expect(floodParts(outage.triage.counts)).toBe('6 条告警、6 条恢复、12 条确认和抑制记录')
   })
 
   it('measures the reduction from the flood', () => {
@@ -69,9 +69,9 @@ describe('frequency dip', () => {
 
   it('reports the load step dip in the viewer zone, labeled', () => {
     const ny = dipText(dipOf(outage), outage.zone)
-    expect(ny).toMatch(/^Load step \d\d:\d\d:\d\d EDT \(at the transfer\): worst 58\.\d\d Hz, 1\.\d\d Hz below the 60 Hz nominal, back within 0\.5 Hz at \d\d:\d\d:\d\d EDT, 2 s after the step\.$/)
+    expect(ny).toMatch(/^负载投入 \d\d:\d\d:\d\d EDT（电源切换），最低 58\.\d\d Hz，比额定 60 Hz 低 1\.\d\d Hz，\d\d:\d\d:\d\d EDT 回到 ±0\.5 Hz 范围，耗时 2 秒。$/)
     const utc = dipText(dipOf(outageUtc), outageUtc.zone)
-    expect(utc).toMatch(/^Load step \d\d:\d\d:\d\d UTC .* \d\d:\d\d:\d\d UTC, 2 s after the step\.$/)
+    expect(utc).toMatch(/^负载投入 \d\d:\d\d:\d\d UTC.*\d\d:\d\d:\d\d UTC 回到 .*耗时 2 秒。$/)
   })
 
   it('never shows a crank value', () => {
@@ -82,13 +82,13 @@ describe('frequency dip', () => {
   it('shows no number when nothing was measured', () => {
     const none = { measured: false, reason: 'no transfer to the emergency source and the generator never reached its rated 60 Hz in this export' }
     const t = dipText(none)
-    expect(t).toBe('No dip measurement: no transfer to the emergency source and the generator never reached its rated 60 Hz in this export.')
+    expect(t).toBe('无法测量频率暂降，未观察到切至应急电源，且发电机未达到额定 60 Hz。')
     expect(t).not.toMatch(/\d+\.\d\d Hz/)
   })
 
   it('says when the frequency never came back', () => {
     const dip = { ...dipOf(outageUtc), recovered_at: null, recovery_s: null }
-    expect(dipText(dip, outageUtc.zone)).toMatch(/not back within 0\.5 Hz by \d\d:\d\d:\d\d UTC\.$/)
+    expect(dipText(dip, outageUtc.zone)).toMatch(/截至 \d\d:\d\d:\d\d UTC 仍未回到 ±0\.5 Hz 范围。$/)
   })
 
   it('is what the consequence line shows', () => {
@@ -99,8 +99,8 @@ describe('frequency dip', () => {
 
 describe('grading', () => {
   it('names each grader in plain words', () => {
-    expect(graderTitle('root_cause')).toBe('Root cause')
-    expect(graderTitle('next_step')).toBe('Next step')
+    expect(graderTitle('root_cause')).toBe('主要原因')
+    expect(graderTitle('next_step')).toBe('建议核对事项')
     expect(graderTitle('something_new')).toBe('Something new')
   })
 

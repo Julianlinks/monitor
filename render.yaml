@@ -46,9 +46,11 @@ services:
         - frontend/**
       ignoredPaths:
         - frontend/src/**/*.test.js
+    envVars:
+      - key: VITE_API_URL
+        value: https://power-dashboard-api.onrender.com
     # No rewrite rule needed: the app uses hash routes (/#/alarms), so every
-    # page refresh requests index.html. VITE_API_URL is optional; without it
-    # the build points at https://power-dashboard-api.onrender.com.
+    # page refresh requests index.html.
     headers:
       - path: /assets/*
         name: Cache-Control

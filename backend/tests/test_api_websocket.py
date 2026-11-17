@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
+import config
 
 
 @pytest.fixture(scope="module")
@@ -26,7 +27,7 @@ def test_health(client):
     body = client.get("/api/health").json()
     assert body["status"] == "ok"
     assert body["data_source"] == "simulator"
-    assert body["version"] == "1.3.1"
+    assert body["version"] == config.VERSION
 
 
 def test_websocket_sends_snapshot_on_connect(client):

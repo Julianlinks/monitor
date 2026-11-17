@@ -1,3 +1,54 @@
+# 电气设备诊断监视 · 本地中文版
+
+本版本在 Power Dashboard 基础上增加了单站 CSV 回放，保留原有数据中心实时演示、单线图和研判页面。当前机器上的本地入口为 [单站离线回放](http://127.0.0.1:8000/#/replay) 和 [实时模拟总览](http://127.0.0.1:8000/)。
+
+### Windows 可执行版
+
+在本仓库的 Releases 中下载对应版本的 `Monitor-v版本-windows-x64.exe`。双击会启动本机服务并打开浏览器，默认地址为 `http://127.0.0.1:8765/`。关闭控制台即退出。该版本包含 Python 运行时、依赖和网页资源。回放数据保存在 `%LOCALAPPDATA%\JulianMonitor`，支持通过 `--data-dir`、`--port` 和 `--no-browser` 调整启动方式。
+
+从源码重新构建时，在 Windows x64 上创建 Python 3.12 虚拟环境 `.venv`，安装 `backend/requirements-build.txt`，然后在项目根目录运行 `.\Build-Windows.ps1`。构建完成的版本化 EXE 位于 `dist`。
+
+### 本机启动
+
+前后端依赖及页面构建已安装在此目录。从项目根目录运行 `.\Start-Local.ps1`，在浏览器打开上面的本地链接即可。服务使用本机回环地址。修改前端后，在 `frontend` 目录重新执行 `npm run build`。迁移到另一台 Windows 机器时，先用 Python 3.12 创建根目录的 `.venv`，在其中安装 `backend/requirements.txt`，再在 `frontend` 中执行 `npm ci` 和 `npm run build`。首次安装需要联网，回放和默认模拟研判均在本机运行。
+
+### 体验和验收
+
+打开“离线回放”，点击“打开模拟样例”。样例有两台设备、三个测点，时间为北京时间 2026 年 1 月 1 日 08:00:00 至 08:01:04。将进度跳到以下时刻，可逐项复核。
+
+| 回放时间 | 可见结果 |
+|---|---|
+| 08:00:08 | 短时的电压跌落已结束，未满足持续时间，因此没有低压告警。 |
+| 08:00:18 | 母线低压已持续 4 秒，触发一次低限告警。充电装置上报故障，两者独立记录。 |
+| 08:00:28 | 母线显示数据异常，最后有效采样为 08:00:22。原低压告警仍在，趋势留有缺口。 |
+| 08:00:44 | 有效采样达到恢复条件，母线低压告警恢复。充电装置的故障持续到 08:00:48。 |
+| 08:00:52 | 充电电流的无效采样已恢复。回退到 08:00:18 后，只显示截至当时可知的信息。 |
+
+### 导入自己的样本
+
+用页面里的“下载点表示例”和“下载采样示例”作为模板。文件采用逗号分隔，兼容 UTF-8 或 GB18030。一次导入对应一个站的一批数据。采样时间支持毫秒和时区，无时区时按北京时间处理。按测点、时间排序后判定，同一测点同一时刻相同的记录合并，冲突记录指出行号并拒绝整批导入。同名且文件内容相同的批次可再次打开。
+
+周期测点用点表中的“断数秒”检查采样缺口。变位测点保持最近一次上报的状态。源质量无效时中断越限计时，已触发的设备告警要等后续有效数据满足恢复条件才结束。趋势显示截至游标的最近 600 条原始采样。点表中的阈值均属于本批配置，模拟样例的限值仅用于演示。
+
+离线批次保存在 `backend/replay.db`，独立于上游实时模拟数据库。左侧“离线回放”显示导入的批次，其他专业演示页面沿用上游的数据中心模型。开关柜、继保、录波和电能质量的专业算法需要现场数据和业务验收规则。
+
+### 与现场需求对照
+
+| 专业范围 | 现版可验证 | 需现场确认或补充 |
+|---|---|---|
+| 高压设备 | 导入已有测点并进行通用阈值判断 | 设备台账与测点映射，变压器、断路器或开关柜各自的诊断依据 |
+| 继电保护及安全自动装置 | 回放装置上报的故障位及其变化 | 自检、动作报告、带时标的事件顺序及跨装置关联 |
+| 监控系统 | 可查看本应用连接及数据源状态 | 站内监控主机、通信链路和采集服务健康状态及其数据来源 |
+| 电力系统动态记录装置 | 通用 CSV 趋势 | 装置健康点位、原始录波文件、通道对时与波形分析深度 |
+| 电能质量监测系统 | 展示导入的指标，演示电压暂降 | 电能质量装置状态、暂降事件评价、谐波及不平衡分析口径 |
+| 站用电源与辅助设施 | 直流母线与充电装置离线样例，原有 UPS、切换开关及制冷配电模拟 | 实际交直流系统、电池组、辅助设施范围和设备级联动规则 |
+| 与集中平台协作 | 本地 API、SQLite 和文件导入 | 实际数据接口、统一身份与区域权限、告警回传及处置归属 |
+
+---
+
+## 上游项目资料
+
+
 # Power Dashboard
 
 Real time electrical power monitoring for a data center, with alarm management that follows ANSI/ISA-18.2.
@@ -222,7 +273,7 @@ Backend settings are environment variables (see `backend/config.py`):
 | `DB_PATH` | `power_dashboard.db` | SQLite file |
 | `TRIAGE_ANTHROPIC_KEY` | unset | Optional. When set, Claude Haiku writes the triage text; otherwise the template does. Not set on the hosted demo |
 
-Front end: `VITE_API_URL` is the API base URL used at build time. It is optional. A production build without it points at the live demo API, `https://power-dashboard-api.onrender.com`, and the dev server without it proxies to the local backend.
+Front end: `VITE_API_URL` is the API base URL used at build time. It is optional. A local production build uses its own origin. For separate hosting, configure VITE_API_URL explicitly. The dev server proxies to the local backend.
 
 ### Real hardware (Modbus TCP)
 

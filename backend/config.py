@@ -6,7 +6,7 @@ public demo (simulated data) and a real site (Modbus TCP polling).
 
 import os
 
-VERSION = "1.3.1"
+VERSION = "1.0.0"
 
 
 def _env_bool(name: str, default: bool) -> bool:

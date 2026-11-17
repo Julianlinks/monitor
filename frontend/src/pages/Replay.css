@@ -1,0 +1,20 @@
+.replay { display: grid; gap: 16px; }
+.replay .card { padding: 16px; }
+.replay .card-head { margin-bottom: 12px; }
+.replay .card-head.wrap { flex-wrap: wrap; gap: 12px; }
+.replay-import summary { cursor: pointer; font-weight: 600; }
+.replay-import form, .replay .control-row { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
+.replay-import form { margin: 14px 0; }
+.replay label { display: grid; gap: 4px; color: var(--text-secondary); }
+.replay input, .replay select { background: var(--bg-base); border: 1px solid var(--border-bright); color: var(--text-primary); border-radius: 5px; padding: 6px; max-width: 100%; }
+.replay input[type=range] { width: 100%; margin: 14px 0 2px; accent-color: var(--accent); }
+.replay-range { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--text-secondary); }
+.replay a, .replay button.link { color: var(--accent); background: transparent; border: 0; }
+.replay-evidence { margin-top: 12px; padding: 12px; border-left: 3px solid var(--accent); background: var(--bg-base); }
+.replay-evidence p { margin: 5px 0; }
+.replay .recharts-cartesian-axis-tick { font-size: 11px; }
+@media (max-width: 720px) { .replay .page-header { flex-wrap: wrap; } .replay { min-width: 0; } .replay .card { min-width: 0; } }
+
+.replay-filter { margin: 8px 0; color: var(--text-secondary); }
+.replay-filter summary { cursor: pointer; }
+.replay-filter .control-row { margin-top: 8px; }

@@ -1,3 +1,4 @@
+import { displayText } from '../lib/displayText'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -6,13 +7,13 @@ import { api } from '../services/api'
 
 const COLORS = ['#60a5fa', '#34d399', '#f59e0b', '#c084fc', '#f472b6', '#22d3ee', '#a3e635', '#fb923c']
 const PARAMETERS = {
-  power_kw: 'Power (kW)',
-  load_pct: 'Load (% of rating)',
-  current: 'Current (A)',
-  voltage: 'Voltage (V)',
-  power_factor: 'Power factor',
-  frequency: 'Frequency (Hz)',
-  demand_kw: 'Demand (kW)',
+  power_kw: '有功功率（kW）',
+  load_pct: '负载率（%）',
+  current: '电流（A）',
+  voltage: '电压（V）',
+  power_factor: '功率因数',
+  frequency: '频率（Hz）',
+  demand_kw: '需量（kW）',
 }
 
 export default function Trending() {
@@ -58,31 +59,31 @@ export default function Trending() {
     URL.revokeObjectURL(url)
   }
 
-  const tickFmt = t => new Date(t * 1000).toLocaleString([], period === '7d'
+  const tickFmt = t => new Date(t * 1000).toLocaleString('zh-CN', period === '7d'
     ? { month: 'short', day: 'numeric' } : { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
-          <h2>Trends</h2>
-          <p>Compare meters over time. History is averaged into about 360 points per period.</p>
+          <h2>趋势</h2>
+          <p>按时段比较设备读数，每个时段将历史数据聚合为约 360 个均值点。</p>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={exportCSV} disabled={!data.length}>
-          <Download size={14} /> Export CSV
+          <Download size={14} /> 导出 CSV
         </button>
       </div>
 
       <div className="card trend-card-controls">
         <div className="control-group">
-          <div className="control-label">Meters</div>
+          <div className="control-label">设备仪表</div>
           <div className="chip-row">
             {meters.map(m => {
               const idx = selected.indexOf(m.id)
               return (
                 <button key={m.id} className={`chip${idx >= 0 ? ' on' : ''}`} onClick={() => toggle(m.id)}
                   style={idx >= 0 ? { borderColor: COLORS[idx % COLORS.length], color: COLORS[idx % COLORS.length] } : undefined}>
-                  {m.name}
+                  {displayText(m.name)}
                 </button>
               )
             })}
@@ -90,16 +91,16 @@ export default function Trending() {
         </div>
         <div className="control-row">
           <div className="control-group">
-            <div className="control-label">Parameter</div>
-            <select value={parameter} onChange={e => setParameter(e.target.value)} aria-label="Parameter">
+            <div className="control-label">参数</div>
+            <select value={parameter} onChange={e => setParameter(e.target.value)} aria-label="参数">
               {Object.entries(PARAMETERS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
           <div className="control-group">
-            <div className="control-label">Period</div>
+            <div className="control-label">时段</div>
             <div className="seg">
               {['1h', '24h', '7d'].map(p => (
-                <button key={p} className={`seg-btn${period === p ? ' active' : ''}`} onClick={() => setPeriod(p)}>{p}</button>
+                <button key={p} className={`seg-btn${period === p ? ' active' : ''}`} onClick={() => setPeriod(p)}>{displayText(p)}</button>
               ))}
             </div>
           </div>
@@ -108,9 +109,9 @@ export default function Trending() {
 
       <div className="card">
         {selected.length === 0 ? (
-          <div className="empty-state"><p>Select one or more meters.</p></div>
+          <div className="empty-state"><p>请选择至少一台设备。</p></div>
         ) : loading && !data.length ? (
-          <div className="empty-state"><p>Loading...</p></div>
+          <div className="empty-state"><p>正在加载…</p></div>
         ) : (
           <ResponsiveContainer width="100%" height={380}>
             <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
@@ -119,10 +120,10 @@ export default function Trending() {
                 tick={{ fill: 'var(--text-muted)', fontSize: 11 }} tickLine={false} minTickGap={50} />
               <YAxis domain={['auto', 'auto']} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} tickLine={false} axisLine={false} width={52} />
               <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8 }}
-                labelFormatter={t => new Date(t * 1000).toLocaleString()} />
+                labelFormatter={t => new Date(t * 1000).toLocaleString('zh-CN')} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               {selected.map((id, i) => (
-                <Line key={id} type="monotone" dataKey={id} name={meters.find(m => m.id === id)?.name || id}
+                <Line key={id} type="monotone" dataKey={id} name={displayText(meters.find(m => m.id === id)?.name) || id}
                   stroke={COLORS[i % COLORS.length]} dot={false} strokeWidth={1.6} isAnimationActive={false} connectNulls />
               ))}
             </LineChart>

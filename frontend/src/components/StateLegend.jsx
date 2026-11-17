@@ -6,22 +6,22 @@ import { StateBadge } from './Badges'
 export default function StateLegend({ compact = false }) {
   return (
     <div className="state-legend">
-      <div className="state-flow" aria-label="Alarm state transitions">
+      <div className="state-flow" aria-label="告警状态变化">
         <div className="flow-row">
-          <span className="flow-node">Normal</span>
-          <span className="flow-arrow">condition<span>&rarr;</span></span>
-          <span className="flow-node unack">Unacknowledged</span>
-          <span className="flow-arrow">acknowledge<span>&rarr;</span></span>
-          <span className="flow-node acked">Acknowledged</span>
-          <span className="flow-arrow">clears<span>&rarr;</span></span>
-          <span className="flow-node">Normal</span>
+          <span className="flow-node">正常</span>
+          <span className="flow-arrow">触发<span>&rarr;</span></span>
+          <span className="flow-node unack">待确认</span>
+          <span className="flow-arrow">确认<span>&rarr;</span></span>
+          <span className="flow-node acked">已确认</span>
+          <span className="flow-arrow">恢复<span>&rarr;</span></span>
+          <span className="flow-node">正常</span>
         </div>
         <div className="flow-row">
-          <span className="flow-node unack">Unacknowledged</span>
-          <span className="flow-arrow">clears<span>&rarr;</span></span>
-          <span className="flow-node rtn">Returned to normal, unack</span>
-          <span className="flow-arrow">acknowledge<span>&rarr;</span></span>
-          <span className="flow-node">Normal</span>
+          <span className="flow-node unack">待确认</span>
+          <span className="flow-arrow">恢复<span>&rarr;</span></span>
+          <span className="flow-node rtn">已恢复待确认</span>
+          <span className="flow-arrow">确认<span>&rarr;</span></span>
+          <span className="flow-node">正常</span>
         </div>
       </div>
       {!compact && (

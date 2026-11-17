@@ -28,54 +28,52 @@ export default function WakeScreen({ serverAwake, startedAt, retry }) {
   const pct = serverAwake ? 92 : Math.min(88, (elapsed / EXPECTED_S) * 88)
 
   const title = quick
-    ? 'Connecting to the live system'
+    ? '正在连接监视系统'
     : serverAwake
-      ? 'Server is awake, starting the live feed'
-      : 'Waking up the demo server'
+      ? '服务器已就绪，正在连接实时数据'
+      : '正在连接演示服务器'
 
   return (
     <div className="wake-screen" role="status" aria-live="polite">
       <div className="wake-card">
         <div className="wake-brand">
-          <Zap size={22} /> <span>Power Dashboard</span>
+          <Zap size={22} /> <span>电气监视</span>
         </div>
         <h1>{title}</h1>
 
         {!quick && (
           <p className="wake-text">
-            This portfolio demo is hosted on a free tier that sleeps when nobody is using it.
-            The first visit after a quiet period takes about 30 to 60 seconds while the server
-            starts. After that, everything updates live every 2 seconds.
+            首次打开时，后端会初始化模拟设备及历史数据。连接建立后，页面将持续更新。
           </p>
         )}
 
         <div className="wake-progress" aria-hidden="true">
           <div className="wake-progress-bar" style={{ width: `${pct}%` }} />
         </div>
-        <div className="wake-elapsed mono">{elapsed}s</div>
+        <div className="wake-elapsed mono">{elapsed} 秒</div>
 
         <ol className="wake-steps">
-          <Step done={serverAwake} active={!serverAwake}>Contact the server</Step>
-          <Step done={serverAwake} active={false}>Start the simulator and build 24 h of history</Step>
-          <Step done={false} active={serverAwake}>Open the live data feed</Step>
+          <Step done={serverAwake} active={!serverAwake}>连接服务器</Step>
+          <Step done={serverAwake} active={false}>启动模拟器并生成 24 小时历史数据</Step>
+          <Step done={false} active={serverAwake}>建立实时数据连接</Step>
         </ol>
 
         {slow && (
           <div className="wake-slow">
-            <p>This is taking longer than usual. The server may still be starting.</p>
+            <p>连接时间较长，请检查本地后端服务是否启动。</p>
             <button className="btn btn-primary" onClick={retry}>
-              <RotateCcw size={14} /> Try again
+              <RotateCcw size={14} /> 重新连接
             </button>
           </div>
         )}
 
         <div className="wake-preview">
-          <div className="wake-preview-title">While you wait, here is what you will see</div>
+          <div className="wake-preview-title">演示内容</div>
           <ul>
-            <li>A simulated 2N data center: utility, generator, ATS, switchboard, UPS A and B, PDUs, cooling</li>
-            <li>A live one-line diagram that follows the power path during a utility outage</li>
-            <li>ISA 18.2 alarm handling: acknowledge, shelve, return to normal, and a full alarm journal</li>
-            <li>Buttons to trigger events yourself, from a voltage sag to a full outage</li>
+            <li>双路冗余供电，包括市电、发电机、转换开关、主配电柜、UPS、配电单元和制冷设备</li>
+            <li>单线图展示停电时供电路径的变化</li>
+            <li>告警管理包括确认、暂搁、恢复和事件日志</li>
+            <li>可手动触发电压暂降、市电中断等场景</li>
           </ul>
         </div>
       </div>

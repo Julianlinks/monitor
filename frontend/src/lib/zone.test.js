@@ -10,7 +10,7 @@ describe('zone helpers', () => {
     expect(clockIn(SUMMER, 'America/New_York')).toBe('15:28:45 EDT')
     expect(clockIn(WINTER, 'America/New_York')).toBe('14:28:45 EST')
     expect(clockIn(SUMMER, 'UTC')).toBe('19:28:45 UTC')
-    expect(dateTimeIn(SUMMER, 'America/New_York')).toBe('Oct 16 15:28:45 EDT')
+    expect(dateTimeIn(SUMMER, 'America/New_York')).toBe('10月16日 15:28:45 EDT')
   })
 
   it('reads the offset the server keys its labels by', () => {
@@ -27,7 +27,7 @@ describe('zone helpers', () => {
 
   it('labels the shared formatters too', () => {
     expect(timeOf(SUMMER, 'America/New_York')).toBe('15:28:45 EDT')
-    expect(dateTimeOf(SUMMER, 'UTC')).toBe('Oct 16 19:28:45 UTC')
+    expect(dateTimeOf(SUMMER, 'UTC')).toBe('10月16日 19:28:45 UTC')
     expect(timeOf(null)).toBe('--')
   })
 })

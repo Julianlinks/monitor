@@ -48,6 +48,6 @@ export function clockIn(iso, zone = viewerZone(), labels) {
 // "Oct 16 15:28:45 EDT"
 export function dateTimeIn(iso, zone = viewerZone(), labels) {
   if (!iso) return '--'
-  const p = parts(iso, zone, { month: 'short', day: 'numeric', ...CLOCK })
-  return `${p.month} ${p.day} ${p.hour}:${p.minute}:${p.second} ${zoneLabel(iso, zone, labels)}`
+  const p = parts(iso, zone, { month: 'numeric', day: 'numeric', ...CLOCK })
+  return `${p.month}月${p.day}日 ${p.hour}:${p.minute}:${p.second} ${zoneLabel(iso, zone, labels)}`
 }

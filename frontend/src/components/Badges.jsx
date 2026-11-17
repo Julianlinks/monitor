@@ -4,7 +4,7 @@ import { PRIORITY, STATES } from '../lib/alarms'
 export function PriorityBadge({ priority, compact = false }) {
   const p = PRIORITY[priority] || PRIORITY[4]
   return (
-    <span className={`prio-badge ${p.cls}`} title={`Priority ${priority}: ${p.label}`}>
+    <span className={`prio-badge ${p.cls}`} title={`优先级 ${priority}: ${p.label}`}>
       P{priority}{!compact && <span className="prio-label">{p.label}</span>}
     </span>
   )

@@ -45,7 +45,7 @@ export function AreaChart(props) {
 
 function AreaChartSvg({ points, width, height = 180, unit = '', format = v => v.toFixed(0) }) {
   if (!points || points.length < 2) {
-    return <div className="chart-empty" style={{ height }}>Collecting data...</div>
+    return <div className="chart-empty" style={{ height }}>正在收集数据…</div>
   }
   const ys = points.map(p => p.v)
   let min = Math.min(...ys)
@@ -64,11 +64,11 @@ function AreaChartSvg({ points, width, height = 180, unit = '', format = v => v.
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')
   const ticks = [min, (min + max) / 2, max]
   const timeTicks = [t0, (t0 + t1) / 2, t1]
-  const fmtTime = t => new Date(t * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+  const fmtTime = t => new Date(t * 1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
   return (
     <svg className="area-chart" width={W} height={H} viewBox={`0 0 ${W} ${H}`}
-      role="img" aria-label="Facility load trend">
+      role="img" aria-label="站内负荷趋势">
       {ticks.map((v, i) => (
         <g key={i}>
           <line x1={left} x2={W} y1={y(v)} y2={y(v)} className="grid-line" />

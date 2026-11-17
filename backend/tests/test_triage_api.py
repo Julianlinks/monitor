@@ -6,6 +6,7 @@ import triage
 import triage_export
 from bms_alarm_triage import journal as agent_journal
 from main import app
+import config
 
 
 @pytest.fixture(scope="module")
@@ -21,7 +22,7 @@ def test_export_returns_the_journal_format(client):
     assert res.headers["content-disposition"].startswith('attachment; filename="alarm-journal-')
     doc = res.json()
     assert doc["format"] == "bms-triage-journal" and doc["version"] == 1
-    assert doc["source"] == "power-dashboard 1.3.1"
+    assert doc["source"] == f"power-dashboard {config.VERSION}"
     parsed = agent_journal.parse(doc)
     assert parsed.points and parsed.series
 

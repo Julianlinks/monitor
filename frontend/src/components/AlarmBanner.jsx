@@ -1,3 +1,4 @@
+import { displayText } from '../lib/displayText'
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Activity, ListOrdered, X } from 'lucide-react'
@@ -35,12 +36,12 @@ function TriageOffer({ scenario }) {
   return (
     <div className="event-banner triage-offer">
       <ListOrdered size={14} />
-      <span className="triage-offer-msg"><strong>{offer.label}</strong> finished.</span>
+      <span className="triage-offer-msg"><strong>{displayText(offer.label)}</strong> 已结束。</span>
       <button className="btn btn-sm btn-primary"
         onClick={() => { setOffer(null); navigate('/triage', { state: { run: true } }) }}>
-        Triage this event
+        研判此事件
       </button>
-      <button className="icon-btn triage-offer-close" onClick={() => setOffer(null)} aria-label="Dismiss">
+      <button className="icon-btn triage-offer-close" onClick={() => setOffer(null)} aria-label="关闭提示">
         <X size={14} />
       </button>
     </div>
@@ -65,7 +66,7 @@ export default function AlarmBanner() {
       {scenario && (
         <div className="event-banner">
           <Activity size={14} />
-          <span>Demo event in progress: <strong>{scenario.label}</strong></span>
+          <span>正在模拟 <strong>{displayText(scenario.label)}</strong></span>
         </div>
       )}
       {top && (
@@ -73,15 +74,15 @@ export default function AlarmBanner() {
           <PriorityBadge priority={top.priority} compact />
           <StateBadge state={top.state} priority={top.priority} />
           <span className="alarm-banner-msg">
-            <strong>{top.message}</strong>
-            <span className="muted"> {top.meter_name}, {ago(top.activated_at)}</span>
+            <strong>{displayText(top.message)}</strong>
+            <span className="muted"> {displayText(top.meter_name)}, {ago(top.activated_at)}</span>
           </span>
           <span className="alarm-banner-actions">
             <button className="btn btn-sm btn-ack" onClick={() => api.acknowledge(top.tag, getOperator()).catch(() => {})}>
-              Acknowledge
+              确认告警
             </button>
             <Link to="/alarms" className="btn btn-sm btn-ghost">
-              {summary.unacknowledged > 1 ? `All ${summary.unacknowledged}` : 'Alarms'}
+              {summary.unacknowledged > 1 ? `全部 ${summary.unacknowledged} 条` : '告警'}
             </Link>
           </span>
         </div>
