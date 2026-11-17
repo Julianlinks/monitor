@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { API_URL } from '../services/endpoints'
+import StationDiagnostics, { diagnosticBase } from './StationDiagnostics'
 import './Replay.css'
 
 const base = `${API_URL}/api/replay`
@@ -17,8 +18,8 @@ function ruleText(p) {
   return `${low ? '低于' : '高于'} ${p.trigger} ${p.unit} 持续 ${p.delay} 秒触发，${low ? '达到或高于' : '达到或低于'} ${p.clear} ${p.unit} 恢复`
 }
 
-async function call(path, options) {
-  const res = await fetch(base + path, options)
+async function call(path, options, prefix = base) {
+  const res = await fetch(prefix + path, options)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(typeof body.detail === 'string' ? body.detail : `请求失败（${res.status}）`)
@@ -26,7 +27,8 @@ async function call(path, options) {
   return res.json()
 }
 
-function ImportForm({ busy, onImport }) {
+function ImportForm({ busy, onImport, professional }) {
+  const templates = professional ? diagnosticBase : base
   return <details className="card replay-import">
     <summary>导入站点 CSV</summary>
     <form onSubmit={e => { e.preventDefault(); onImport(new FormData(e.currentTarget)) }}>
@@ -36,7 +38,8 @@ function ImportForm({ busy, onImport }) {
       <button disabled={busy} className="btn btn-primary">校验并导入</button>
     </form>
     <p className="muted small">支持 UTF-8 和 GB18030。时间可含时区，无时区按北京时间。开关量用 0／1，质量填写“有效”或“无效”。规则和单位由点表定义。</p>
-    <a href={base + '/templates/points'} download>下载点表示例</a> · <a href={base + '/templates/samples'} download>下载采样示例</a>
+    {professional && <p className="muted small">专业点表可填写设备类别、信号角色、关联组。动作时限和指标限值见七类设备模板。</p>}
+    <a href={templates + '/templates/points'} download>下载点表示例</a> · <a href={templates + '/templates/samples'} download>下载采样示例</a>
   </details>
 }
 
@@ -65,7 +68,8 @@ function PointPanel({ p, frame }) {
   </section>
 }
 
-export default function Replay() {
+export default function Replay({ professional = false }) {
+  const pendingScroll = useRef(false)
   const [sets, setSets] = useState([])
   const [dataset, setDataset] = useState(null)
   const [at, setAt] = useState(0)
@@ -82,8 +86,8 @@ export default function Replay() {
   const [eventFrom, setEventFrom] = useState('')
   const [eventUntil, setEventUntil] = useState('')
 
-  function choose(ds) {
-    setPlaying(false); setDataset(ds); setAt(ds.start); setPoint(''); setResult(null)
+  function choose(ds, cursor = ds.start) {
+    setPlaying(false); setDataset(ds); setAt(cursor); setPoint(''); setResult(null)
     setDevice(''); setStatus(''); setFocus(''); setEventFrom(''); setEventUntil(''); setError('')
   }
   useEffect(() => {
@@ -96,9 +100,9 @@ export default function Replay() {
   async function load(form) {
     setBusy(true); setPlaying(false); setError(''); setNotice('')
     try {
-      const ds = await call(form ? '/datasets' : '/sample', { method: 'POST', body: form || undefined })
+      const ds = await call(form ? '/datasets' : '/sample', { method: 'POST', body: form || undefined }, professional && !form ? diagnosticBase : base)
       setSets(list => [ds, ...list.filter(item => item.id !== ds.id)])
-      choose(ds)
+      choose(ds, professional && !form ? Math.min(ds.end,ds.start + 23000) : ds.start)
       setNotice(`${ds.existing ? '已打开原有批次' : '导入成功'}。共 ${ds.point_count} 个测点、${ds.sample_count} 条采样，合并 ${ds.duplicates} 条重复记录。`)
     } catch (err) { setError(err instanceof TypeError ? '无法连接本地导入服务。' : err.message) } finally { setBusy(false) }
   }
@@ -130,6 +134,17 @@ export default function Replay() {
   const points = frame?.points || []
   const byId = Object.fromEntries(points.map(p => [p.id, p]))
   const selected = byId[frame?.point]
+  useEffect(() => {
+    if (pendingScroll.current && selected?.id === point) {
+      pendingScroll.current = false
+      document.querySelector('.replay-detail')?.scrollIntoView({block:'center'})
+    }
+  }, [selected, point])
+  function inspect(id) {
+    setPlaying(false)
+    if (id === selected?.id) document.querySelector('.replay-detail')?.scrollIntoView({block:'center'})
+    else { pendingScroll.current = true; setPoint(id) }
+  }
   const from = eventFrom ? Date.parse(eventFrom + '+08:00') : -Infinity
   const until = eventUntil ? Date.parse(eventUntil + '+08:00') : Infinity
   const visibleEvents = (frame?.events || []).filter(e => (!device || byId[e.point].device === device)
@@ -138,13 +153,13 @@ export default function Replay() {
   const event = visibleEvents.find(e => keyOf(e) === focus)
 
   return <div className="page replay">
-    <div className="page-header"><div><h2>单站离线回放</h2><p>按采样时间查看设备、告警和判断依据。所有时间均为北京时间。</p></div>
-      <button className="btn btn-primary" disabled={busy} onClick={() => load(null)}>打开模拟样例</button>
+    <div className="page-header"><div><h2>{professional ? '单站电气设备诊断' : '单站离线回放'}</h2><p>按采样时间查看设备、告警和判断依据。所有时间均为北京时间。</p></div>
+      <button className="btn btn-primary" disabled={busy} onClick={() => load(null)}>{professional ? '打开七类设备样例' : '打开模拟样例'}</button>
     </div>
-    <ImportForm busy={busy} onImport={load} />
+    <ImportForm busy={busy} onImport={load} professional={professional} />
     {error && <p role="alert" className="form-error">{error}</p>}
     {notice && <p role="status" className="muted">{notice}</p>}
-    {!dataset ? <p className="card empty-state">打开站用直流电源模拟样例，或导入现场点表和采样记录。</p> : <>
+    {!dataset ? <p className="card empty-state">{professional ? '打开七类设备样例，或导入站点点表和采样记录。' : '打开站用直流电源模拟样例，或导入现场点表和采样记录。'}</p> : <>
       <section className="card replay-control">
         <div className="control-row">
           <label>数据批次<select aria-label="数据批次" value={dataset.id} onChange={e => {choose(sets.find(s => s.id === e.target.value)); setNotice('')}}>{sets.map(s => <option value={s.id} key={s.id}>{s.name}</option>)}</select></label>
@@ -156,12 +171,13 @@ export default function Replay() {
         <input type="range" aria-label="回放进度" min={dataset.start} max={dataset.end} step="1" value={at} onChange={e => seek(Number(e.target.value))} />
         <div className="replay-range"><span>{clock(dataset.start)}</span><strong>{clock(at)}</strong><span>{clock(dataset.end)}</span></div>
       </section>
+      {professional && <StationDiagnostics key={dataset.id} dataset={dataset} at={at} onPoint={inspect} onSeek={seek} />}
       {!frame ? <p className="muted" role="status">正在读取该时刻的数据…</p> : <>
-        <section className="card"><div className="card-head"><h3>设备与测点</h3><span className="muted small">选择测点查看趋势</span></div>
+        {!professional && <section className="card"><div className="card-head"><h3>设备与测点</h3><span className="muted small">选择测点查看趋势</span></div>
           <div className="table-wrap"><table className="data-table"><thead><tr><th>设备</th><th>测点</th><th>当前值</th><th>数据质量</th><th>设备告警</th></tr></thead><tbody>
             {points.map(p => <tr key={p.id}><td>{p.device}</td><td><button className="link" onClick={() => setPoint(p.id)}>{p.name}</button></td><td>{show(p,p.value)}</td><td>{p.quality}</td><td>{p.active ? '告警中' : '无已触发告警'}</td></tr>)}
           </tbody></table></div>
-        </section>
+        </section>}
         {selected && <PointPanel p={selected} frame={frame} />}
         <section className="card"><div className="card-head wrap"><h3>截至回放时刻的告警</h3><div className="control-row">
           <select aria-label="按设备筛选" value={device} onChange={e=>setDevice(e.target.value)}><option value="">全部设备</option>{[...new Set(points.map(p=>p.device))].map(n=><option key={n}>{n}</option>)}</select>

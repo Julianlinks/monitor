@@ -18,3 +18,18 @@
 .replay-filter { margin: 8px 0; color: var(--text-secondary); }
 .replay-filter summary { cursor: pointer; }
 .replay-filter .control-row { margin-top: 8px; }
+
+.diag-tabs, .diag-summary, .diag-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.diag-tabs button { background: var(--bg-base); border: 1px solid var(--border-bright); color: var(--text-secondary); padding: 7px 11px; border-radius: 5px; cursor: pointer; }
+.diag-tabs button[aria-pressed=true] { color: var(--accent); border-color: var(--accent); }
+.diag-summary { margin: 16px 0; align-items: baseline; gap: 12px; color: var(--text-secondary); }
+.diag-summary strong { color: var(--text-primary); font-size: 1.1rem; }
+.diag-station .table-wrap, .diag-details { margin: 12px 0; }
+.diag-details summary { cursor: pointer; }
+.diag-links .link { margin: 2px 4px 2px 0; text-decoration: underline; }
+.diag-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr)); gap: 10px; }
+.diag-metrics article { border: 1px solid var(--border-bright); padding: 12px; border-radius: 6px; }
+.diag-metrics strong { color: var(--accent); font-size: 1.4rem; }
+.diag-metrics p, .diag-wave p { margin: 6px 0; color: var(--text-secondary); }
+.diag-wave label, .diag-station label { width: fit-content; max-width: 100%; }
+.diag-station, .replay-detail, .replay-control { min-width: 0; }

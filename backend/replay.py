@@ -11,6 +11,9 @@ from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import station_profiles
+from power_quality import add_derived
+
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
@@ -39,6 +42,10 @@ def connect():
             dataset TEXT, point TEXT, kind TEXT, start INTEGER, end INTEGER,
             first_seen INTEGER, trigger_value REAL, recovered_value REAL, detail TEXT,
             PRIMARY KEY(dataset, point, kind, start)
+        );
+        CREATE TABLE IF NOT EXISTS station_recordings (
+            dataset TEXT, device TEXT, id TEXT, end INTEGER, meta TEXT, cfg BLOB, dat BLOB,
+            PRIMARY KEY(dataset, device, id)
         );
     """)
     return db
@@ -110,12 +117,20 @@ def parse_points(content):
         delay = number(r, "持续秒", loc, 0)
         if delay < 0 or (delay and r["上送方式"] == "变位"):
             fail(f"{loc}持续秒应非负，变位点应设为 0")
-        result[key] = dict(id=key, device=r["设备"], name=r["名称"], unit=r.get("单位", ""),
+        try:
+            extra = station_profiles.metadata(r, loc)
+        except ValueError as error:
+            fail(str(error))
+        result[key] = dict(**extra, id=key, device=r["设备"], name=r["名称"], unit=r.get("单位", ""),
                            kind=r["类型"], mode=r["上送方式"], timeout=timeout, rule=rule,
                            trigger=trigger, clear=clear, delay=delay,
                            off=r.get("零值含义") or "0", on=r.get("一值含义") or "1")
     if not result:
         fail("点表为空")
+    try:
+        station_profiles.check_groups(result)
+    except ValueError as error:
+        fail(str(error))
     return result
 
 
@@ -211,19 +226,24 @@ def import_set(name, points, samples):
     data, duplicates = parse_samples(samples, specs)
     start = min(min(series) for series in data.values())
     end = max(max(series) for series in data.values())
+    count = sum(map(len, data.values()))
+    try:
+        add_derived(specs, data)
+    except ValueError as exc:
+        fail(str(exc))
+    rule_version = "2.0" if any(p["category"] != "未分类" for p in specs.values()) else RULE_VERSION
     digest = hashlib.sha256()
-    for value in [RULE_VERSION.encode(), name.encode(), points, samples]:
+    for value in [rule_version.encode(), name.encode(), points, samples]:
         digest.update(len(value).to_bytes(8, "big"))
         digest.update(value)
     key = digest.hexdigest()
-    count = sum(map(len, data.values()))
     with closing(connect()) as db, db:
         db.execute("BEGIN IMMEDIATE")
         exists = db.execute("SELECT * FROM replay_sets WHERE id=?", (key,)).fetchone()
         if exists:
             return {**dict(exists), "existing": True}
         db.execute("INSERT INTO replay_sets VALUES(?,?,?,?,?,?,?,?)",
-                   (key, name, start, end, RULE_VERSION, len(specs), count, duplicates))
+                   (key, name, start, end, rule_version, len(specs), count, duplicates))
         for pid, spec in specs.items():
             db.execute("INSERT INTO replay_points VALUES(?,?,?)", (key, pid, json.dumps(spec, ensure_ascii=False)))
             series = data.get(pid, {})
@@ -296,4 +316,4 @@ def snapshot(key: str, at: int, point: str = ""):
             if e["kind"] == "数据质量" and e["point"] == selected and history and history[0]["ts"] <= e["start"]:
                 history.append(dict(ts=e["start"], value=None))
         history.sort(key=lambda r:r["ts"])
-        return dict(at=at, points=specs, events=events, point=selected, history=history, truncated=len(rows)>600)
+        return dict(at=at, rule_version=dataset["rule_version"], points=specs, events=events, point=selected, history=history, truncated=len(rows)>600)

@@ -818,7 +818,7 @@ select:focus, input[type="text"]:focus { border-color: var(--accent); }
   .tri-cq-list { margin-left: 4px; }
 
   .bottom-nav {
-    display: grid; grid-template-columns: repeat(8, minmax(0, 1fr));
+    display: grid; grid-template-columns: repeat(9, minmax(49px, 1fr)); overflow-x: auto;
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);

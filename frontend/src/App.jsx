@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useCallback, useState } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, GitBranch, Gauge, Bell, ListOrdered, TrendingUp, Settings, Zap, Info, FlaskConical, History } from 'lucide-react'
+import { LayoutDashboard, GitBranch, Gauge, Bell, ListOrdered, TrendingUp, Settings, Zap, Info, FlaskConical, History, Stethoscope } from 'lucide-react'
 import { LiveFeedProvider, useFeed } from './services/LiveFeed'
 import WakeScreen from './components/WakeScreen'
 import AboutPanel from './components/AboutPanel'
@@ -19,6 +19,7 @@ const Triage = lazy(() => import('./pages/Triage'))
 
 const NAV = [
   { to: '/',         icon: LayoutDashboard, label: '总览' },
+  { to: '/diagnostics', icon: Stethoscope, label: '专业诊断' },
   { to: '/replay', icon: History, label: '离线回放' },
   { to: '/one-line', icon: GitBranch,       label: '电气单线图' },
   { to: '/meters',   icon: Gauge,           label: '设备仪表' },
@@ -40,7 +41,7 @@ function ConnectionPill({ phase }) {
 
 function Shell() {
   const feed = useFeed()
-  const replay = useLocation().pathname === '/replay'
+  const replay = ['/replay','/diagnostics'].includes(useLocation().pathname)
   const [aboutOpen, setAboutOpen] = useState(false)
   const openAbout = useCallback(() => setAboutOpen(true), [])
   const closeAbout = useCallback(() => setAboutOpen(false), [])
@@ -96,7 +97,8 @@ function Shell() {
           <Suspense fallback={<div className="page-loading">正在加载…</div>}>
             <Routes>
               <Route path="/" element={<Dashboard onAbout={openAbout} />} />
-              <Route path="/replay" element={<Replay />} />
+              <Route path="/diagnostics" element={<Replay key="diagnostics" professional />} />
+              <Route path="/replay" element={<Replay key="replay" />} />
               <Route path="/one-line" element={<OneLineDiagram />} />
               <Route path="/meters" element={<Meters />} />
               <Route path="/alarms" element={<Alarms />} />

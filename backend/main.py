@@ -15,6 +15,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import config
+import diagnostics
+import recordings
 from replay import router as replay_router
 import database
 import triage
@@ -45,6 +47,8 @@ app = FastAPI(
 )
 
 app.include_router(replay_router)
+app.include_router(diagnostics.router)
+app.include_router(recordings.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,

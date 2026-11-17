@@ -5,11 +5,12 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy
 root = Path(SPECPATH)
 datas = [(str(root / 'frontend' / 'dist'), 'frontend/dist'),
          (str(root / 'backend' / 'replay_sample'), 'replay_sample'),
+         (str(root / 'backend' / 'station_sample'), 'station_sample'),
          (str(root / 'LICENSE'), 'licenses/power-dashboard')]
 for package in ('bms_alarm_triage', 'bms_triage_service', 'tzdata'):
     datas += collect_data_files(package)
 for package in ('langgraph', 'langgraph-checkpoint', 'langchain-core', 'langsmith',
-                'bms-alarm-triage-agent'):
+                'bms-alarm-triage-agent', 'comtrade'):
     datas += copy_metadata(package)
 hidden = ['uvicorn.protocols.http.h11_impl', 'uvicorn.protocols.websockets.websockets_impl',
           'uvicorn.lifespan.on', 'uvicorn.loops.asyncio', 'main', 'pymodbus.client']

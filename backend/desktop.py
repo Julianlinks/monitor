@@ -29,7 +29,7 @@ def main():
             if self.started:
                 print(f"电气设备诊断监视 {VERSION}\n本地地址 {url}\n数据目录 {data}\n按 Ctrl+C 或关闭此窗口退出。", flush=True)
                 if not args.no_browser:
-                    await asyncio.to_thread(webbrowser.open, url)
+                    await asyncio.to_thread(webbrowser.open, url + "#/diagnostics")
 
     # Reserve the port before the simulator initializes its scratch database.
     cfg = uvicorn.Config(app, host="127.0.0.1", port=args.port, loop="asyncio",
