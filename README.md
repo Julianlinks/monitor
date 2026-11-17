@@ -2,7 +2,7 @@
 
 第二版面向单个站点的离线诊断。在“专业诊断”打开七类设备样例或导入点表与采样，将时间轴停在某一时刻，查看当时已知的告警、动作反馈、波形和测点依据。原有实时模拟总览、单线图和告警研判保留独立入口，供选择是否采用。
 
-[下载第二版 Windows x64](https://github.com/Julianlinks/monitor/releases/download/monitor-v2.0.0/Monitor-v2.0.0-windows-x64.exe) · [下载第一版 Windows x64](https://github.com/Julianlinks/monitor/releases/download/monitor-v1.0.0/Monitor-v1.0.0-windows-x64.exe)
+[下载第二版 Windows x64（修订 1）](https://github.com/Julianlinks/monitor/releases/download/monitor-v2.0.0-r1/Monitor-v2.0.0-windows-x64.exe) · [下载第一版 Windows x64](https://github.com/Julianlinks/monitor/releases/download/monitor-v1.0.0/Monitor-v1.0.0-windows-x64.exe)
 
 ### 七类设备验收样例
 

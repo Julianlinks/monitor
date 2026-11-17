@@ -1,11 +1,9 @@
 import { displayText } from '../lib/displayText'
 import React, { useEffect, useRef, useState } from 'react'
-import { X, FlaskConical, Play, Github } from 'lucide-react'
+import { X, FlaskConical, Play } from 'lucide-react'
 import { useFeed } from '../services/LiveFeed'
 import { api } from '../services/api'
 import StateLegend from './StateLegend'
-
-const REPO_URL = 'https://github.com/AddisonTech/power-dashboard'
 
 export function ScenarioButtons({ onDone }) {
   const { demo, system } = useFeed()
@@ -114,9 +112,6 @@ export default function AboutPanel({ open, onClose }) {
           <section>
             <h3>技术栈</h3>
             <p>后端使用 Python、FastAPI 和 SQLite，前端使用 React 与 Vite，通过 WebSocket 接收实时数据。</p>
-            <a className="btn btn-ghost" href={REPO_URL} target="_blank" rel="noreferrer">
-              <Github size={14} /> 查看 GitHub 原项目
-            </a>
           </section>
         </div>
       </div>
